@@ -68,7 +68,10 @@ async def review_code(request: CodeReviewRequest):
     try:
         # Инициализируем клиент OpenAI
         openai.api_key = api_key
-        
+        client = openai.OpenAI(
+            api_key=api_key,
+            base_url="https://api.openai.com/v1"  
+        )
         prompt = f"""
 Please review this {request.language} code:
 
@@ -90,3 +93,4 @@ Please review this {request.language} code:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
+
