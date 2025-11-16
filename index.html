@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumMind - AI Code Review</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 40px 20px;
+        }
+        .container { 
+            max-width: 1000px; margin: 0 auto; 
+            background: white; border-radius: 15px; padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 { 
+            color: #333; text-align: center; margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        select, textarea, button { 
+            width: 100%; padding: 12px; border: 2px solid #e1e5e9; 
+            border-radius: 8px; font-size: 16px;
+        }
+        textarea { 
+            height: 200px; resize: vertical; font-family: 'Courier New', monospace;
+        }
+        button { 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            color: white; border: none; cursor: pointer; font-weight: 600;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: translateY(-2px); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        #result { 
+            margin-top: 30px; padding: 20px; background: #f8f9fa; 
+            border-radius: 8px; border-left: 4px solid #667eea;
+            white-space: pre-wrap; display: none;
+        }
+        .loading { 
+            text-align: center; padding: 20px; color: #667eea; 
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 QuantumMind AI Code Review</h1>
+        
+        <div class="input-group">
+            <label for="language">Programming Language:</label>
+            <select id="language">
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="java">Java</option>
+                <option value="cpp">C++</option>
+                <option value="go">Go</option>
+                <option value="rust">Rust</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label for="code">Your Code:</label>
+            <textarea id="code" placeholder="Paste your code here..."></textarea>
+        </div>
+
+        <button onclick="reviewCode()" id="review-btn">Review Code</button>
+        
+        <div class="loading" id="loading">
+            ⏳ AI is analyzing your code...
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function reviewCode() {
+            const code = document.getElementById('code').value;
+            const language = document.getElementById('language').value;
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            const button = document.getElementById('review-btn');
+
+            if (!code.trim()) {
+                alert('Please enter some code to review');
+                return;
+            }
+
+            // Показываем загрузку
+            button.disabled = true;
+            loadingDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('http://localhost:8000/api/review', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        language: language
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Показываем результат
+                resultDiv.innerHTML = data.review;
+                resultDiv.style.display = 'block';
+
+            } catch (error) {
+                resultDiv.innerHTML = '❌ Error: ' + error.message;
+                resultDiv.style.display = 'block';
+            } finally {
+                loadingDiv.style.display = 'none';
+                button.disabled = false;
+            }
+        }
+
+        // Enter shortcut для отправки
+        document.getElementById('code').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                reviewCode();
+            }
+        });
+    </script>
+</body>
+</html>
