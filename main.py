@@ -13,7 +13,7 @@ app = FastAPI(title="QuantumMind Code Review API")
 # Настройка CORS для фронтенда
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Для продакшена замените на домен фронтенда
+    allow_origins=["https://691a3c669bc059cb34ae901b--lively-zuccutto-9a0d16.netlify.app","https://quantummind-code-reviewer.onrender.com"],  
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -88,4 +88,5 @@ Please review this {request.language} code:
         return {"review": response.choices[0].message.content}
 
     except Exception as e:
+
         raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
