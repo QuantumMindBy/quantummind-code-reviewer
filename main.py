@@ -49,6 +49,17 @@ Target language: Russian/English (based on the code comments).
 class CodeReviewRequest(BaseModel):
     code: str
     language: str = "python"
+    
+async def get_chat_response(prompt, system_prompt):
+    response = await openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3
+    )
+    return response
 
 @app.get("/")
 async def root():
@@ -70,18 +81,11 @@ Please review this {request.language} code:
 ```{request.language}
 {request.code}
 """
-
-response = await openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.3
-    )
     
-    return {"review": response.choices[0]['message']['content']}
-
+        response = await get_chat_response(prompt, SYSTEM_PROMPT)
+    
+        return {"review": response.choices[0]['message']['content']}
+    
     except Exception as e:
-    raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
 
