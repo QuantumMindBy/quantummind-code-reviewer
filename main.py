@@ -136,7 +136,7 @@ Please review this {request.language} code:
         "model": "gpt-3.5-turbo"
     }
     
-    except Exception as e:
+ except Exception as e:
     print(f"Error in review endpoint: {e}")
     raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
 
@@ -147,6 +147,7 @@ async def health_check():
         "service": "quantummind-code-reviewer",
         "timestamp": "2024-01-01T00:00:00Z"
     }
+
 
 
 
