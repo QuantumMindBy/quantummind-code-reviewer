@@ -64,7 +64,30 @@ async def get_chat_response(prompt, system_prompt):
 @app.get("/")
 async def root():
     return {"message": "QuantumMind Code Review API is running!"}
-
+    
+@app.get("/debug")
+async def debug():
+    import openai
+    import os
+    
+    debug_info = {
+        "openai_version": openai.version,
+        "api_key_set": bool(os.getenv("OPENAI_API_KEY")),
+        "api_key_length": len(os.getenv("OPENAI_API_KEY", "")),
+        "api_key_prefix": os.getenv("OPENAI_API_KEY", "")[:10] + "..." if os.getenv("OPENAI_API_KEY") else None
+    }
+    
+    # Проверим API ключ
+    try:
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        models = client.models.list()
+        debug_info["api_test"] = "SUCCESS"
+        debug_info["available_models"] = len(models.data)
+    except Exception as e:
+        debug_info["api_test"] = f"FAILED: {str(e)}"
+    
+    return debug_info
+    
 @app.post("/api/review")
 async def review_code(request: CodeReviewRequest):
     try:
@@ -74,7 +97,11 @@ async def review_code(request: CodeReviewRequest):
             raise HTTPException(status_code=500, detail="OpenAI API key is not set.")
         
         openai.api_key = api_key
-        
+        result = await analyze_code(request.code, request.language)
+        return result
+    except Exception as e:
+        print(f"Error in review endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
         prompt = f"""
 Please review this {request.language} code:
 
@@ -88,4 +115,5 @@ Please review this {request.language} code:
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
+
 
