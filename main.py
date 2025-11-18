@@ -3,17 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
 import os
-from dotenv import load_dotenv
-
-# Загружаем переменные окружения
-load_dotenv()
 
 app = FastAPI(title="QuantumMind Code Review API")
 
 # Настройка CORS для фронтенда
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://691a3c669bc059cb34ae901b--lively-zuccutto-9a0d16.netlify.app","https://quantummind-code-reviewer.onrender.com"],  
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -60,37 +56,31 @@ async def root():
 
 @app.post("/api/review")
 async def review_code(request: CodeReviewRequest):
-    # Проверка наличия API ключа
-    api_key = os.getenv('OPENAI_API_KEY')
-    if not api_key:
-        raise HTTPException(status_code=500, detail="OpenAI API key is not set.")
-
     try:
-        # Инициализируем клиент OpenAI
+        # Получаем API ключ из переменной окружения
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            raise HTTPException(status_code=500, detail="OpenAI API key is not set.")
+        
         openai.api_key = api_key
-        client = openai.OpenAI(
-            api_key=api_key,
-            base_url="https://api.openai.com/v1"  
-        )
+        
         prompt = f"""
 Please review this {request.language} code:
 
 ```{request.language}
-{request.code}```
+{request.code}
 """
 
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3
-        )
-        
-        return {"review": response.choices[0].message.content}
+response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3
+    )
+    
+    return {"review": response.choices[0].message['content']}
 
-    except Exception as e:
-
-        raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
-
+except Exception as e:
+    raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
