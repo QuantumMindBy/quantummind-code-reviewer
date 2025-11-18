@@ -71,7 +71,7 @@ Please review this {request.language} code:
 {request.code}
 """
 
-response = openai.ChatCompletion.create(
+response = await openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -80,7 +80,8 @@ response = openai.ChatCompletion.create(
         temperature=0.3
     )
     
-    return {"review": response.choices[0].message['content']}
+    return {"review": response.choices[0]['message']['content']}
 
-except Exception as e:
+    except Exception as e:
     raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
+
