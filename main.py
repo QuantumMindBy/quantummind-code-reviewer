@@ -116,4 +116,12 @@ Please review this {request.language} code:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
 
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "quantummind-code-reviewer",
+        "timestamp": "2024-01-01T00:00:00Z"
+    }
+
 
