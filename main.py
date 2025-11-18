@@ -70,23 +70,33 @@ async def debug():
     import openai
     import os
     
-    debug_info = {
-        "openai_version": openai.version,
-        "api_key_set": bool(os.getenv("OPENAI_API_KEY")),
-        "api_key_length": len(os.getenv("OPENAI_API_KEY", "")),
-        "api_key_prefix": os.getenv("OPENAI_API_KEY", "")[:10] + "..." if os.getenv("OPENAI_API_KEY") else None
-    }
-    
-    # Проверим API ключ
     try:
+        # Создаем клиент
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        # Получаем модели, но преобразуем в простые структуры
         models = client.models.list()
-        debug_info["api_test"] = "SUCCESS"
-        debug_info["available_models"] = len(models.data)
+        
+        debug_info = {
+            "openai_version": openai.version,
+            "api_key_set": bool(os.getenv("OPENAI_API_KEY")),
+            "api_key_length": len(os.getenv("OPENAI_API_KEY", "")),
+            "api_key_prefix": os.getenv("OPENAI_API_KEY", "")[:10] + "..." if os.getenv("OPENAI_API_KEY") else None,
+            "api_test": "SUCCESS",
+            "available_models": len(models.data),
+            # Преобразуем в простой список ID моделей
+            "model_ids": [model.id for model in models.data[:5]]  # первые 5 моделей
+        }
+        
+        return debug_info
+        
     except Exception as e:
-        debug_info["api_test"] = f"FAILED: {str(e)}"
-    
-    return debug_info
+        return {
+            "error": str(e),
+            "error_type": type(e).name,
+            "openai_version": openai.version,
+            "api_key_set": bool(os.getenv("OPENAI_API_KEY"))
+        }
     
 @app.post("/api/review")
 async def review_code(request: CodeReviewRequest):
@@ -96,12 +106,9 @@ async def review_code(request: CodeReviewRequest):
         if not api_key:
             raise HTTPException(status_code=500, detail="OpenAI API key is not set.")
         
-        openai.api_key = api_key
-        result = await analyze_code(request.code, request.language)
-        return result
-    except Exception as e:
-        print(f"Error in review endpoint: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Создаем клиент OpenAI (современный способ)
+        client = openai.OpenAI(api_key=api_key)
+        
         prompt = f"""
 Please review this {request.language} code:
 
@@ -109,12 +116,29 @@ Please review this {request.language} code:
 {request.code}
 """
     
-        response = await get_chat_response(prompt, SYSTEM_PROMPT)
+        # Получаем ответ от OpenAI
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1000
+    )
     
-        return {"review": response.choices[0]['message']['content']}
+    # Извлекаем текст ответа (простой строкой)
+    review_text = response.choices[0].message.content
+    
+    # Возвращаем простой dict (без сложных объектов)
+    return {
+        "review": review_text,
+        "status": "success",
+        "model": "gpt-3.5-turbo"
+    }
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
+    print(f"Error in review endpoint: {e}")
+    raise HTTPException(status_code=500, detail=f"API Error: {str(e)}")
 
 @app.get("/health")
 async def health_check():
@@ -123,5 +147,6 @@ async def health_check():
         "service": "quantummind-code-reviewer",
         "timestamp": "2024-01-01T00:00:00Z"
     }
+
 
 
